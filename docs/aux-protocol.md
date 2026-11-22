@@ -171,6 +171,18 @@ it has been tried by us.
 - **V2 (`0xBD`)**: it has commands to start a plate solve (`0x01`) and to read
   the result as RA and Dec (`0x02`), and takes location (`0x31`) and time
   (`0x32`). The payload of the start command is not decoded.
+- The star list does not come in an AUX packet. It has its own frame: `0x3C`,
+  a 4-byte big-endian length, the payload and a checksum, with every `0x3B`
+  in the length and payload escaped as `3B 02 02`. The payload is 8 bytes per
+  star. Our parser does not read this frame yet.
+- The original camera also keeps the calibrated centre (`0x3E` to set, `0x3F`
+  to get), and has a capture reset (`0x90`) and an image request (`0x9F`).
+- Celestron's CPWI program for Windows is said to find and use this camera
+  once it is connected to the mount, which would mean the camera answers a
+  controller other than the StarSense hand control (a search summary of
+  Celestron's CPWI manual, 2026-11-21; we have not opened the page). A search
+  the same day found no account of a hobbyist reading and solving the star
+  list end to end.
 - We have the original camera (see `AGENTS.md`), so a sky position means
   solving its star list ourselves.
 
