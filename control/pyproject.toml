@@ -6,8 +6,20 @@ requires-python = ">=3.12"
 license = "GPL-3.0-only"
 dependencies = []
 
+[project.optional-dependencies]
+solve = ["cedar-solve"]  # plate solving (solver.py); Apache-2.0
+
 [dependency-groups]
-dev = ["pytest>=8", "pyright>=1.1.380", "caux-simulator>=0.2.33"]
+dev = ["pytest>=8", "pyright>=1.1.380", "caux-simulator>=0.2.33", "telescope-control[solve]"]
+
+[tool.uv.sources]
+# The commit the solver was trialled on (Aug 2026). PyPI's 0.5.1 is from 2024 and is older code.
+cedar-solve = { git = "https://github.com/smroid/cedar-solve", rev = "607e3f8da7db0743bb6a26037e21c40b6befe49a" }
+
+[tool.uv]
+# cedar-solve pins Pillow<9 and numpy<2, which have no wheels for current Python.
+# Its solve of the recorded frame was unchanged with numpy 2.5 and current Pillow on Python 3.14.
+override-dependencies = ["pillow>=10", "numpy>=2"]
 
 [build-system]
 requires = ["hatchling"]
