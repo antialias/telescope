@@ -58,6 +58,13 @@ nothing yet.
 - A device hears its own packet come back and has to discard it.
 - The bus carries several devices at once (hand control, WiFi board, camera),
   so a wired device joins them rather than replacing one.
+- That firmware also answers as the GPS accessory (`0xB0`) when it has a GPS
+  receiver: `GPS_LINKED` (`0x37`), `GPS_TIME_VALID` (`0x36`) and
+  `GPS_GET_TIME` (`0x33`: hour, minute, second), with the date and position
+  requests beside them. That is how a hand control gets time and place
+  without typing. Our StarSense hand control showed a date in January 2000
+  when alignment began (2026-11-21) and had to be set by hand; a board of
+  ours could answer the same requests from network time. Not tried.
 - Confirm the pin numbering with a meter before plugging anything in: a
   mirrored cable would put 12 V on a data line.
 
