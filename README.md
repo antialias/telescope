@@ -26,6 +26,8 @@ WiFi, joined to a home network. Another mount may answer differently.
 
 Not done yet: solving a list from our camera, alignment, tracking.
 
+![The recorded star list as dots, with catalogue stars laid over it as rings](docs/images/recorded-frame-solved.png)
+
 ## Try it
 
 Needs [uv](https://docs.astral.sh/uv/). From `control/`:

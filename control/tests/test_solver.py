@@ -83,7 +83,7 @@ def test_a_missing_database_names_the_build_command(tmp_path: Path) -> None:
 
 def test_a_saved_list_reads_back_the_same(tmp_path: Path) -> None:
     stars = recorded_stars()
-    finished = datetime(2026, 11, 22, 21, 30, 5, 250000, tzinfo=timezone(timedelta(hours=-6)))
+    finished = datetime(2026, 11, 22, 21, 30, 5, 250000, tzinfo=timezone(timedelta(hours=5, minutes=30)))
     path = tmp_path / "list.json"
     solver.save_stars(path, stars, finished=finished, exposure=100)
     saved = solver.load_stars(path)
@@ -91,7 +91,7 @@ def test_a_saved_list_reads_back_the_same(tmp_path: Path) -> None:
     assert saved.exposure == 100
     assert saved.finished == finished
     assert saved.finished.utcoffset() == timedelta(0)
-    assert '"finished_utc": "2026-11-23T03:30:05.250000+00:00"' in path.read_text()
+    assert '"finished_utc": "2026-11-22T16:00:05.250000+00:00"' in path.read_text()
 
 
 def test_a_time_without_a_zone_is_refused(tmp_path: Path) -> None:
