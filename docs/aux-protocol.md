@@ -39,6 +39,28 @@ Checked means one of:
   Communication Protocol" document says those commands go to the port on the
   base of the hand control. Over WiFi there is only the AUX bus.
 
+## Wired to an AUX port
+
+For a microcontroller plugged into one of the mount's AUX jacks. Source: the
+schematic and firmware of a community ESP32 board that does this (g7ltt's
+board, Mark Lord's firmware). Neither is Celestron's, and we have wired
+nothing yet.
+
+- The jack has six contacts (6P6C). On that board pin 3 carries 12 V from the
+  mount, pin 5 is ground, pin 2 is data from the bus, pin 4 is data to the
+  bus, pin 6 is the busy line and pin 1 is unused.
+- Serial at 19200 baud, 8 data bits, 2 stop bits.
+- Data-to-bus and busy are pulled up to 5 V, and a device only ever pulls them
+  low. An ESP32's pins are 3.3 V, so an interface chip sits between; that
+  board uses a 74HC125, and a 12 V to 5 V converter for power.
+- Taking a turn on the bus: see that busy is high, pull it low, wait at least
+  100 microseconds, send the packet, release busy.
+- A device hears its own packet come back and has to discard it.
+- The bus carries several devices at once (hand control, WiFi board, camera),
+  so a wired device joins them rather than replacing one.
+- Confirm the pin numbering with a meter before plugging anything in: a
+  mirrored cable would put 12 V on a data line.
+
 ## Packet
 
 ```
@@ -156,6 +178,8 @@ it has been tried by us.
   keeps an idle connection.
 - Whether macOS lets a terminal program receive the discovery broadcast
   without a Local Network permission prompt.
+- What the motors do when whoever set a tracking rate goes silent. In the
+  simulator a rate runs until it is changed, with nothing to stop it.
 
 ## Sources
 
@@ -171,6 +195,9 @@ it has been tried by us.
 - [nexstar-evo](https://github.com/jochym/nexstar-evo/blob/master/nsevo/nexstarevo.py):
   an earlier Python client by the driver's author; shows discovery on UDP
   55555.
+- [Celestron GPS, WiFi and Bluetooth interface](https://github.com/g7ltt/Celestron-GPS-WiFi-BT-Interface):
+  a community ESP32 board for the AUX port, with Mark Lord's firmware. Files
+  read: `esp32_wifi-V3.8.ino` and the version 2.0 schematic.
 - [NexStar Communication Protocol](https://s3.amazonaws.com/celestron-site-support-files/support_files/1154108406_nexstarcommprot.pdf):
   Celestron's document for the hand control's ASCII protocol.
 - [WiFi tips for NexStar Evolution](https://www.celestron.com/blogs/knowledgebase/wifi-tips-for-nexstar-evolution):
