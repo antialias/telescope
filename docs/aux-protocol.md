@@ -164,7 +164,8 @@ it has been tried by us.
 - **V2 (`0xBD`)**: it has commands to start a plate solve (`0x01`) and to read
   the result as RA and Dec (`0x02`), and takes location (`0x31`) and time
   (`0x32`). The payload of the start command is not decoded.
-- Which camera we have is still to be confirmed (see `AGENTS.md`).
+- We have the original camera (see `AGENTS.md`), so a sky position means
+  solving its star list ourselves.
 
 ## Not yet known
 

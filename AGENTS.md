@@ -13,9 +13,9 @@ processing and documentation.
 - Bought new in March 2025, bundled with a Celestron Eyepiece Accessory Kit.
   Also owned: a NexYZ DX smartphone adapter and Celestron's deluxe case for
   8" tubes.
-- Not yet confirmed: the StarSense generation. The original (#94005) comes
-  with a StarSense hand control; V2 (#94034) comes with a NexStar+ hand
-  control. This decides which manual's alignment and calibration steps apply.
+- StarSense is the original generation (#94005): the hand control is a
+  StarSense hand control (seen 2026-11-21); V2 (#94034) comes with a NexStar+
+  one. Alignment and calibration steps come from the #94005 manual.
 
 ## Rules
 - Procedures come from the maker's manuals in `docs/manuals`. Cite the manual
