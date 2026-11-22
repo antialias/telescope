@@ -1,8 +1,9 @@
 """A client for a Celestron mount's AUX bus over its WiFi bridge (TCP 2000).
 
-The bridge passes AUX packets through unchanged. Everything we send comes back
-as an echo, followed by the addressed device's reply: the same command id with
-source and destination swapped. A device that is not on the bus does not reply.
+The bridge passes AUX packets through unchanged. The addressed device replies
+with the same command id, source and destination swapped. The simulator also
+echoes everything we send; our mount's WiFi board was seen not to. A device
+that is not on the bus does not reply.
 A star list from the StarSense camera has no address; whatever arrives is kept
 for `star_frame`.
 """

@@ -15,8 +15,11 @@ Checked means one of:
 - The mount's WiFi board is a transparent bridge to its internal AUX bus, on
   TCP port 2000. On the mount's own hotspot its address is `1.2.3.4`
   (source: indi-celestronaux `auxproto.h`).
-- Every packet a client sends comes back as an echo, followed by the reply
-  from the addressed device (source: the simulator's `handle_cmd`; simulator).
+- In the simulator every packet a client sends comes back as an echo,
+  followed by the reply from the addressed device (the simulator's
+  `handle_cmd`). Our mount's WiFi board did not echo our packets to the
+  camera (2026-11-22); only the replies came back. A client must work
+  either way.
 - A device that is not on the bus sends nothing. A client learns that only by
   timing out (simulator).
 - Other traffic on the bus reaches the client too, such as a plugged-in hand
@@ -286,15 +289,35 @@ Indoors in daylight, over the house WiFi, from our address `0x20`. Reads only.
 - Nothing answers at `0xBD`, so there is no V2 camera, as expected.
 - Listening for 8 s without sending, with the hand control idle after
   power-on: no frames. An idle hand control does not chatter.
+- **An exposure from our address**, the toolkit's three commands sent one at
+  a time while polling status (`0x91`) every 0.4 s. Times are from the first
+  line. Indoors in daylight, so no stars were expected.
+
+  | Time | Sent | Came back |
+  |---|---|---|
+  | 0.08 s | status | `01 00` |
+  | 1.24 s | reset `0x90`, data `03 E8 00` | nothing for 2.8 s, not even status |
+  | 4.01 s | | reply to `0x90`, no data; status now `03 00` |
+  | 7.28 s | start `0x94`, data `00` | nothing for 10.4 s, not even status |
+  | 13.34 s | fetch `0x92` (sent while the camera was silent) | |
+  | 17.72 s | | reply to `0x94`: `01 00`; status `01 00` |
+  | 18.16 s | | reply to `0x92`: `01 00` |
+
+  So the camera obeys an exposure asked for over WiFi from the app's address.
+  It is deaf while it works, and it answers each command when it has
+  finished, with a status byte and a star count. A first try that waited 4 s
+  after each command saw only the reset's reply. `capture` now waits for
+  each reply. With no stars there was no star list, so whether the WiFi board
+  passes one is still open.
 
 ## Not yet known
 
 - What our own mount answers: which devices are present, firmware versions,
   positions at power-on.
-- Whether the Evolution's WiFi board passes the camera's star list frame, and
-  whether the camera answers a capture requested from the app's address.
-- Whether the echo and reply behaviour on the real WiFi board matches the
-  simulator.
+- Whether the Evolution's WiFi board passes the camera's star list frame. No
+  list has been produced yet: the only exposures so far found no stars.
+- What the three data bytes of the reset (`03 E8 00`) and the one of the
+  start (`00`) set.
 - Whether SkyPortal and our client can be connected at the same time, and
   what happens to SkyPortal's alignment if our client moves the mount.
 - Which WiFi board our 2025 mount has, what it broadcasts, and how long it

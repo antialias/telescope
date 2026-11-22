@@ -3,9 +3,9 @@
 The command ids, the capture sequence and the meaning of the replies come from
 the celestron-aux toolkit (github.com/platini2/celestron-aux: catalog.py,
 decoding.py, starsense.py), which names community reverse engineering as its
-source. None of this has been run against our camera yet. `capture` therefore
-keeps everything that came back, so a first run shows what the camera really
-says.
+source. Run against our camera on 2026-11-22 as far as an exposure that found
+no stars; a star list from it has not been seen yet, so `capture` keeps
+everything that came back.
 
 Nothing here writes the camera's stored centre calibration (command 0x3E), and
 nothing here moves the mount.
@@ -16,7 +16,7 @@ from __future__ import annotations
 import time
 from dataclasses import dataclass
 
-from .client import AuxClient, AuxProtocolError
+from .client import AuxClient, AuxProtocolError, AuxTimeout
 from .packet import Command, Device, Packet, Star, StarFrame
 
 SENSOR_PIXELS = (1280, 960)  # celestron-aux starsense.py, SENSOR_RESOLUTION
@@ -64,30 +64,46 @@ def align_center(camera: AuxClient) -> tuple[int, int]:
     return int.from_bytes(data[:4], "little"), int.from_bytes(data[4:], "little")
 
 
-def capture(camera: AuxClient, *, pause: float = 4.0) -> Capture:
-    """Ask for one exposure and its star list, the way celestron-aux does: reset, start, fetch.
+def capture(camera: AuxClient, *, reset_wait: float = 10.0, exposure_wait: float = 40.0, list_wait: float = 5.0) -> Capture:
+    """Take one exposure and fetch its star list: reset, start, fetch, each waiting for the camera's reply.
 
-    celestron-aux waits four seconds after each step, and so does this, while
-    listening. The commands are sent without requiring a reply, because the
-    replies are not known yet; whatever arrives is in `events`.
+    On our camera (2026-11-22) the reset was answered after about 3 s and the
+    start after about 10 s, and the camera answered nothing else in between.
+    The reply to the fetch carries the star count; when it is not zero the
+    star list is waited for as well. Everything that arrived is in `events`.
     """
     began = time.monotonic()
     events: list[tuple[float, Packet | StarFrame]] = []
     stars: list[Star] | None = None
 
-    def gather(seconds: float) -> None:
+    def gather(seconds: float, until: Command | None = None) -> Packet | None:
+        """Listen for `seconds`, or until the camera's reply to `until` (or, without one, a star list) has come."""
         nonlocal stars
-        for frame in camera.listen(seconds):
-            events.append((time.monotonic() - began, frame))
-            if isinstance(frame, StarFrame):
-                stars = frame.stars()
+        deadline = time.monotonic() + seconds
+        reply: Packet | None = None
+        while reply is None and (remaining := deadline - time.monotonic()) > 0:
+            for frame in camera.listen(min(0.25, remaining)):  # run to its end, so nothing read is left behind
+                events.append((time.monotonic() - began, frame))
+                if isinstance(frame, StarFrame):
+                    stars = frame.stars()
+                elif reply is None and (frame.source, frame.command) == (Device.STARSENSE_CAMERA, until):
+                    reply = frame
+            if until is None and stars is not None:
+                break
+        return reply
 
-    steps = (
-        (Command.SS_RESET_CAPTURE, RESET_DATA),
-        (Command.SS_START_CAPTURE, START_DATA),
-        (Command.SS_GET_CAPTURE_DATA, b""),
-    )
-    for command, data in steps:
+    def step(command: Command, data: bytes, wait: float) -> Packet:
         camera.send(Device.STARSENSE_CAMERA, command, data)
-        gather(pause)
+        reply = gather(wait, until=command)
+        if reply is None:
+            raise AuxTimeout(f"the camera did not answer command 0x{command:02x} within {wait:g} s")
+        return reply
+
+    step(Command.SS_RESET_CAPTURE, RESET_DATA, reset_wait)
+    step(Command.SS_START_CAPTURE, START_DATA, exposure_wait)
+    fetched = step(Command.SS_GET_CAPTURE_DATA, b"", reset_wait).data
+    if len(fetched) != 2:
+        raise AuxProtocolError(f"reply to the fetch has {len(fetched)} bytes, expected 2: {fetched.hex()}")
+    if fetched[1] and stars is None:
+        gather(list_wait)
     return Capture(events, stars)
