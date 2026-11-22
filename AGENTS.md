@@ -27,5 +27,13 @@ processing and documentation.
 ## Layout
 - `docs/`: documentation. `docs/manuals` holds Celestron's PDFs, which stay
   out of git; its README lists where each came from.
-- `control/`, `collection/`, `processing/`: created with the first code for
-  each.
+- `control/`: Python package `celestron_aux`, a client for the mount's AUX
+  protocol over its WiFi (`docs/aux-protocol.md` says what is known and how).
+- `collection/`, `processing/`: created with the first code for each.
+
+## Working in `control/`
+- Tests and type check, from `control/`: `uv run pytest` and `uv run pyright`.
+  The tests start `caux-simulator`, an emulator of the mount's bus, so they
+  need no hardware and prove nothing about the real mount.
+- `uv run python -m celestron_aux <host>` is a read-only probe of a mount.
+- A motion command to the real mount is sent on the owner's word.
