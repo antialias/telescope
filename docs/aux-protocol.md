@@ -8,7 +8,7 @@ marked by how far it has been checked.
 Checked means one of:
 - **source**: read in the code or document named.
 - **simulator**: our client does it against `caux-simulator`.
-- **mount**: seen on our own mount. Nothing is at this level yet.
+- **mount**: seen on our own mount. See "Seen on our mount" below.
 
 ## Transport
 
@@ -166,6 +166,25 @@ it has been tried by us.
   (`0x32`). The payload of the start command is not decoded.
 - We have the original camera (see `AGENTS.md`), so a sky position means
   solving its star list ourselves.
+
+## Seen on our mount (2026-11-21)
+
+First contact, over the house WiFi in Access Point mode, with the read-only
+probe. The StarSense hand control and camera were plugged in.
+
+- It announces itself about once a second on UDP port 55555 with 66 bytes of
+  JSON that begin `{"version":"CELEST-AMW0`. That is the newer WiFi board, and
+  not the payload the emulators send.
+- The probe's requests and replies work as they do against the simulator.
+- Motor controllers (`0x10`, `0x11`): version 7.17.98. Model `0x1687`.
+- WiFi board `0xB5`: version 0.00.256. Battery, charge port and lights
+  (`0xB6`, `0xB7`, `0xBF`): version 1.01.16418.
+- Battery read 9.64 V, "medium", discharging. The pack is nominally 9.6 V, so
+  the simulator's 12 V is not what the real one shows.
+- No reply from `0x01`, `0x04`, `0x0D`, `0x12` or `0xB0`.
+- Port 2000 does not always accept: of four connections a few seconds apart,
+  one timed out, two connected and one was refused. The SkyPortal app was
+  open on a phone at the time. Not yet explained; a client must expect it.
 
 ## Not yet known
 
