@@ -190,7 +190,8 @@ probe. The StarSense hand control and camera were plugged in.
   (`MC_GOTO_SLOW`) of azimuth by +5 degrees and back. It ran at about
   0.5 degrees a second, `MC_SLEW_DONE` turned true on arrival, and the axis
   returned to its starting reading within 0.001 degree. Altitude did not
-  change. Which way positive azimuth turns is still to be noted.
+  change. Positive azimuth turned the tube to the right as seen from behind
+  it, which is clockwise seen from above (the owner watched).
 
 ## Not yet known
 
