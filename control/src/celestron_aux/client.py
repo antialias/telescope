@@ -117,6 +117,10 @@ class AuxClient:
                 yield self._star_frames.popleft()
             yield from packets
 
+    def discard_incomplete(self) -> int:
+        """Drop a frame that stopped arriving part way (see `Parser.discard`); returns the bytes dropped."""
+        return self._parser.discard()
+
     def star_frame(self, timeout: float) -> StarFrame:
         """The oldest star list not yet taken, waiting up to `timeout` seconds for one."""
         deadline = time.monotonic() + timeout

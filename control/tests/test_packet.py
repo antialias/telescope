@@ -97,3 +97,12 @@ def test_a_star_frame_with_a_bad_checksum_or_an_absurd_length_is_dropped() -> No
     corrupt = good[:-1] + bytes([good[-1] ^ 0xFF])
     assert Parser().feed(corrupt + GET_VER_AZM) == [Packet(0x20, 0x10, 0xFE)]
     assert Parser().feed(bytes.fromhex("3c00010000") + GET_VER_AZM) == [Packet(0x20, 0x10, 0xFE)]
+
+
+def test_discard_drops_a_frame_that_stopped_part_way() -> None:
+    parser = Parser()
+    short = StarFrame.of(STARS).encode()[:-3]
+    assert parser.feed(short) == []
+    assert parser.discard() == len(short)
+    assert parser.dropped == len(short)
+    assert parser.feed(GET_VER_AZM) == [Packet(0x20, 0x10, 0xFE)]

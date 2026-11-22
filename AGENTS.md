@@ -37,6 +37,7 @@ processing and documentation.
   need no hardware and prove nothing about the real mount.
 - `uv run python -m celestron_aux <host>` is a read-only probe of a mount.
   `--camera` reads the StarSense camera, `--listen <seconds>` prints the bus
-  and sends nothing, and `--capture` has the camera take an exposure, which
-  moves nothing but is not yet proven on ours: ask the owner first.
+  and sends nothing, and `--capture [--exposure N]` has the camera take an
+  exposure and prints its star list. It moves nothing and works on ours over
+  WiFi (2026-11-22; `--exposure 100` suited a daylit room).
 - A motion command to the real mount is sent on the owner's word.

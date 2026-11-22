@@ -152,6 +152,17 @@ class Parser:
             del self._buffer[:size]
         return frames
 
+    def discard(self) -> int:
+        """Give up on whatever incomplete frame is waiting, and say how many bytes that was.
+
+        For when the line has gone quiet and a frame is still short: a byte was
+        lost on the way, and the rest of that frame would otherwise hold up, or
+        be mistaken for, what comes next.
+        """
+        count = len(self._buffer)
+        self._drop(count)
+        return count
+
     def _drop(self, count: int) -> None:
         self.dropped += count
         del self._buffer[:count]

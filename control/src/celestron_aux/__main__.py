@@ -33,6 +33,12 @@ def main() -> None:
     what.add_argument("--camera", action="store_true", help="read the StarSense camera's version, status and centre")
     what.add_argument("--listen", type=float, metavar="SECONDS", help="print everything on the bus, send nothing")
     what.add_argument("--capture", action="store_true", help="have the StarSense camera take one exposure")
+    parser.add_argument(
+        "--exposure",
+        type=int,
+        default=starsense.TOOLKIT_EXPOSURE,
+        help="the number sent with the capture's reset (default %(default)s; 100 suited a daylit room)",
+    )
     args = parser.parse_args()
 
     host = args.host
@@ -48,7 +54,7 @@ def main() -> None:
             for frame in mount.listen(args.listen):
                 _show(time.monotonic() - began, frame)
         elif args.capture:
-            _capture(mount)
+            _capture(mount, args.exposure)
         else:
             _bus(mount)
 
@@ -75,17 +81,16 @@ def _bus(mount: AuxClient) -> None:
 def _camera(mount: AuxClient) -> None:
     print(f"camera version {mount.version(Device.STARSENSE_CAMERA)}")
     status = starsense.status(mount)
-    print(f"status {status.code} (the toolkit's name for it: {status.name}), {status.stars} stars")
+    print(f"status {status.code} ({status.name}), {status.stars} stars")
     x, y = starsense.align_center(mount)
     print(f"stored centre x {x}, y {y} (sensor is {starsense.SENSOR_PIXELS[0]} by {starsense.SENSOR_PIXELS[1]})")
 
 
-def _capture(mount: AuxClient) -> None:
-    result = starsense.capture(mount)
+def _capture(mount: AuxClient, exposure: int) -> None:
+    result = starsense.capture(mount, exposure=exposure)
     for seconds, frame in result.events:
         _show(seconds, frame)
-    if result.stars is None:
-        print("no star list arrived")
+    print(f"status {result.status.code} ({result.status.name}), {len(result.stars)} stars, list asked for {result.fetches} time(s)")
 
 
 def _show(seconds: float, frame: Packet | StarFrame) -> None:

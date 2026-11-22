@@ -180,8 +180,8 @@ has answered is under "Seen on our mount".
 |---|---|---|
 | `0x3E` | set align centre | Not used by us: it would overwrite the stored centre calibration. |
 | `0x3F` | get align centre | Asked with one data byte `00`. Reply: 8 bytes, x then y as little-endian 32-bit integers. |
-| `0x90` | reset capture | Sent with data `03 E8 00`. `0x03E8` is 1000, perhaps the exposure in milliseconds (our guess). |
-| `0x91` | get status | Reply: a status byte (1 "Error", 3 "Ready", 9 "Finished" in the toolkit's decoder) and a star count. |
+| `0x90` | reset capture | Sent with data `03 E8 00`: a 16-bit number (1000) and a zero byte. On our camera the number acts as an exposure setting (see below). |
+| `0x91` | get status | Reply: a status byte (1 "Error", 3 "Ready", 9 "Finished" in the toolkit's decoder) and a star count. On ours 1 is also the idle state. |
 | `0x92` | get capture data | Sent without data. The star list follows. Reply decoded like status. |
 | `0x94` | start capture | Sent with data `00`. Reply decoded like status. |
 | `0x9F` | image request | Reply decoded like status. Not used by us. |
@@ -242,6 +242,10 @@ copied into this repository.
 3. `python -m celestron_aux <host> --capture`, with the owner's agreement:
    the toolkit's sequence from our own address. It makes the camera take an
    exposure and moves nothing.
+
+Steps 1 and 3 were done on 2026-11-22 (see "The camera over WiFi" below).
+Step 2 was not needed for reading the camera; it would still show what
+exposure number the hand control uses.
 
 ## Seen on our mount (2026-11-21)
 
@@ -307,17 +311,41 @@ Indoors in daylight, over the house WiFi, from our address `0x20`. Reads only.
   It is deaf while it works, and it answers each command when it has
   finished, with a status byte and a star count. A first try that waited 4 s
   after each command saw only the reset's reply. `capture` now waits for
-  each reply. With no stars there was no star list, so whether the WiFi board
-  passes one is still open.
+  each reply.
+- **Star lists over WiFi.** With the camera aimed across a daylit room at a
+  curtain of small lights, and the reset's number lowered from 1000 to 100:
+  - The start was answered `09 NN` after about 10 s and the fetch `09 NN`
+    0.1 s later, NN being the count (73 to 100 over a dozen exposures). The
+    star list followed within half a second, in many small TCP segments, and
+    parsed with a correct checksum. So the Evolution's WiFi board passes the
+    `0x3C` frame.
+  - With the reset's number at 1000 and at 500 the same scene gave `01 00`:
+    nothing found. The reset was answered after 2.8 s, 1.9 s and 1.2 s for
+    1000, 500 and 100, so the number acts as an exposure setting. Its unit is
+    not established. Once the reset took 7.4 s to be answered.
+  - Of the first seven lists, two never completed. In the one recorded byte
+    for byte, 653 of 654 bytes arrived: one byte was missing about 135 bytes
+    into the frame, at a 0.1 s pause in the stream that the intact lists show
+    too. The loss is somewhere between the camera and our socket; a wired
+    connection to the bus would show which side.
+  - Sending the fetch again, without a new exposure, returns the same list:
+    three fetches of one exposure gave three identical lists. A repeated
+    fetch was answered after about 5 s. `capture` uses this: when a list does
+    not complete it drops the partial frame and fetches again, up to three
+    times, and fails with an error if none arrives whole.
+  - Some lists hold one record of eight zero bytes, which the count includes
+    (a count of 98 with 97 stars).
 
 ## Not yet known
 
 - What our own mount answers: which devices are present, firmware versions,
   positions at power-on.
-- Whether the Evolution's WiFi board passes the camera's star list frame. No
-  list has been produced yet: the only exposures so far found no stars.
-- What the three data bytes of the reset (`03 E8 00`) and the one of the
-  start (`00`) set.
+- The unit of the reset's 16-bit number, what its third byte sets, and what
+  the start's data byte sets. What number the hand control uses at night.
+- Where the occasional byte of a star list is lost: the camera, the bus or
+  the WiFi board.
+- Whether a real night sky's list solves: the camera's scale and distortion,
+  and which way its x and y run on the sky.
 - Whether SkyPortal and our client can be connected at the same time, and
   what happens to SkyPortal's alignment if our client moves the mount.
 - Which WiFi board our 2025 mount has, what it broadcasts, and how long it
