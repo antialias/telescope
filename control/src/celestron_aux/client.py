@@ -3,17 +3,21 @@
 The bridge passes AUX packets through unchanged. Everything we send comes back
 as an echo, followed by the addressed device's reply: the same command id with
 source and destination swapped. A device that is not on the bus does not reply.
+A star list from the StarSense camera has no address; whatever arrives is kept
+for `star_frame`.
 """
 
 from __future__ import annotations
 
 import socket
 import time
+from collections import deque
+from collections.abc import Iterator
 from dataclasses import dataclass
 from types import TracebackType
 from typing import Self
 
-from .packet import Command, Device, Packet, Parser
+from .packet import Command, Device, Packet, Parser, StarFrame
 
 DEFAULT_PORT = 2000
 DISCOVERY_PORT = 55555
@@ -64,6 +68,7 @@ class AuxClient:
         self._timeout = timeout
         self._socket: socket.socket | None = None
         self._parser = Parser()
+        self._star_frames: deque[StarFrame] = deque()
 
     def __enter__(self) -> Self:
         self.connect()
@@ -77,32 +82,68 @@ class AuxClient:
     def connect(self) -> None:
         self._socket = socket.create_connection(self._address, timeout=self._timeout)
         self._parser = Parser()
+        self._star_frames.clear()
 
     def close(self) -> None:
         if self._socket is not None:
             self._socket.close()
             self._socket = None
 
-    def request(self, destination: int, command: int, data: bytes = b"") -> Packet:
-        """Send one command and return the reply addressed back to us."""
+    def send(self, destination: int, command: int, data: bytes = b"") -> None:
+        """Send one command without waiting for anything."""
         if self._socket is None:
             raise ConnectionError("not connected")
         self._socket.sendall(Packet(Device.APP, destination, command, data).encode())
+
+    def request(self, destination: int, command: int, data: bytes = b"") -> Packet:
+        """Send one command and return the reply addressed back to us."""
+        self.send(destination, command, data)
         deadline = time.monotonic() + self._timeout
         while True:
             remaining = deadline - time.monotonic()
             if remaining <= 0:
                 raise AuxTimeout(f"no reply from device 0x{destination:02x} to command 0x{command:02x}")
-            self._socket.settimeout(remaining)
-            try:
-                chunk = self._socket.recv(4096)
-            except TimeoutError:
-                continue
-            if not chunk:
-                raise ConnectionError("the mount closed the connection")
-            for packet in self._parser.feed(chunk):
+            for packet in self._receive(remaining):
                 if (packet.source, packet.destination, packet.command) == (destination, Device.APP, command):
                     return packet
+
+    def listen(self, seconds: float) -> Iterator[Packet | StarFrame]:
+        """Yield everything that arrives in the next `seconds`: echoes, replies, other traffic, star lists."""
+        deadline = time.monotonic() + seconds
+        while (remaining := deadline - time.monotonic()) > 0:
+            packets = self._receive(remaining)
+            while self._star_frames:
+                yield self._star_frames.popleft()
+            yield from packets
+
+    def star_frame(self, timeout: float) -> StarFrame:
+        """The oldest star list not yet taken, waiting up to `timeout` seconds for one."""
+        deadline = time.monotonic() + timeout
+        while not self._star_frames:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise AuxTimeout(f"no star list arrived within {timeout:g} s")
+            self._receive(remaining)
+        return self._star_frames.popleft()
+
+    def _receive(self, timeout: float) -> list[Packet]:
+        """Read once. Star lists go to the queue; the packets are returned. Empty when nothing came."""
+        if self._socket is None:
+            raise ConnectionError("not connected")
+        self._socket.settimeout(timeout)
+        try:
+            chunk = self._socket.recv(4096)
+        except TimeoutError:
+            return []
+        if not chunk:
+            raise ConnectionError("the mount closed the connection")
+        packets: list[Packet] = []
+        for frame in self._parser.feed(chunk):
+            if isinstance(frame, StarFrame):
+                self._star_frames.append(frame)
+            else:
+                packets.append(frame)
+        return packets
 
     def version(self, device: int) -> str:
         data = self.request(device, Command.GET_VER).data

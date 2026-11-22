@@ -160,31 +160,85 @@ These decide the shape of our software.
 ## The StarSense camera
 
 From the `celestron-aux` toolkit (GPL-3), whose author says the names come
-from captures and reverse engineering. None of it is Celestron's, and none of
-it has been tried by us.
+from captures and reverse engineering. None of it is Celestron's. We have read
+the toolkit's source and its recordings of real hardware; we have not yet
+talked to our own camera (the mount was switched off when this was written).
 
-- **Original camera (`0xB4`)**: it can be told to capture (`0x94`), polled for
-  status (`0x91`) and asked for its data (`0x92`). The data is a list of star
-  positions in pixels, not a sky position, so the solving happens in the
-  StarSense hand control. To use it ourselves we would have to solve the star
-  list.
+- **Original camera (`0xB4`)**, the one we have (see `AGENTS.md`): it returns
+  a list of star positions in pixels, not a sky position, so the solving
+  happens in whoever asked. To use it ourselves we solve the star list.
 - **V2 (`0xBD`)**: it has commands to start a plate solve (`0x01`) and to read
   the result as RA and Dec (`0x02`), and takes location (`0x31`) and time
   (`0x32`). The payload of the start command is not decoded.
-- The star list does not come in an AUX packet. It has its own frame: `0x3C`,
-  a 4-byte big-endian length, the payload and a checksum, with every `0x3B`
-  in the length and payload escaped as `3B 02 02`. The payload is 8 bytes per
-  star. Our parser does not read this frame yet.
-- The original camera also keeps the calibrated centre (`0x3E` to set, `0x3F`
-  to get), and has a capture reset (`0x90`) and an image request (`0x9F`).
-- Celestron's CPWI program for Windows is said to find and use this camera
-  once it is connected to the mount, which would mean the camera answers a
-  controller other than the StarSense hand control (a search summary of
-  Celestron's CPWI manual, 2026-11-21; we have not opened the page). A search
-  the same day found no account of a hobbyist reading and solving the star
-  list end to end.
-- We have the original camera (see `AGENTS.md`), so a sky position means
-  solving its star list ourselves.
+
+### Commands of the original camera
+
+| Command | Name in the toolkit | What the toolkit's code shows |
+|---|---|---|
+| `0x3E` | set align centre | Not used by us: it would overwrite the stored centre calibration. |
+| `0x3F` | get align centre | Asked with one data byte `00`. Reply: 8 bytes, x then y as little-endian 32-bit integers. |
+| `0x90` | reset capture | Sent with data `03 E8 00`. `0x03E8` is 1000, perhaps the exposure in milliseconds (our guess). |
+| `0x91` | get status | Reply: a status byte (1 "Error", 3 "Ready", 9 "Finished" in the toolkit's decoder) and a star count. |
+| `0x92` | get capture data | Sent without data. The star list follows. Reply decoded like status. |
+| `0x94` | start capture | Sent with data `00`. Reply decoded like status. |
+| `0x9F` | image request | Reply decoded like status. Not used by us. |
+| `0xFE` | version | Four bytes, like the other devices. |
+
+The toolkit's capture sequence (`starsense.py`, `run_capture_sequence`) is
+reset, wait 4 s, start, wait 4 s, get capture data. It sends each command
+without waiting for a reply.
+
+### The star list frame
+
+The star list does not come in an AUX packet and carries no addresses:
+
+    0x3C  length (4 bytes, big-endian)  payload...  checksum
+
+Every `0x3B` in the length and payload is sent as `3B 02 02`. The checksum is
+over the length and payload before that escaping. The payload is 8 bytes per
+star: x and y in pixels as two little-endian 32-bit floats, on a sensor the
+toolkit gives as 1280 by 960. A record of eight zero bytes is not a star.
+
+Our parser reads this frame (`packet.py`, `StarFrame`). Checked 2026-11-21
+against the toolkit's recording of a real star list
+(`tests/fixtures/starsense_frame.hex`): 808 bytes on the wire with one escaped
+byte gave 800 payload bytes and 99 stars, all inside 1280 by 960, and encoding
+them again gave the same 808 bytes. The recording is the toolkit's and is not
+copied into this repository.
+
+### Evidence that the camera can be reached over WiFi
+
+- The toolkit ships a recording of a real WiFi session
+  (`tests/fixtures/cpwi_wifi_nexstar_slt.pcap`: Celestron's CPWI program, a
+  NexStar SLT with a WiFi module, a StarSense camera and its hand control).
+  Read with our own parser, 2026-11-21:
+  - CPWI, as `0x20` over WiFi, asked the camera for its version and its
+    centre, and the camera answered: version `01 02 34 1F` (1.02.13343),
+    centre eight zero bytes.
+  - The hand control's own exchange with the camera (`0x0E` to `0xB4`:
+    version, `0x05` answered `01`, status answered `01 00`, centre) appears
+    in what the WiFi module sent to CPWI. So the module passes on bus traffic
+    that is not addressed to the WiFi client.
+  - The toolkit's notes say the same recording holds two packets from the
+    hand control with a wrong checksum. A bridge that passes those is not
+    checking packets, which suggests it would pass a star list too. That is
+    an inference: the recording holds no star list.
+- That is a WiFi module on another mount, not the Evolution's built-in board.
+- Celestron's quick setup guide for our model has the SkyPortal app align
+  with StarSense over the mount's WiFi ("Connect and Align").
+- A search on 2026-11-21 found no account of a hobbyist reading and solving
+  the star list end to end.
+
+### First contact with ours, in order
+
+1. `python -m celestron_aux <host> --camera`: version, status and stored
+   centre. Reads only.
+2. `python -m celestron_aux <host> --listen 120` while the owner runs an
+   alignment on the hand control. We send nothing. If the bridge passes it,
+   this shows the hand control's real capture sequence and a real star list.
+3. `python -m celestron_aux <host> --capture`, with the owner's agreement:
+   the toolkit's sequence from our own address. It makes the camera take an
+   exposure and moves nothing.
 
 ## Seen on our mount (2026-11-21)
 
@@ -216,6 +270,8 @@ probe. The StarSense hand control and camera were plugged in.
 
 - What our own mount answers: which devices are present, firmware versions,
   positions at power-on.
+- Whether the Evolution's WiFi board passes the camera's star list frame, and
+  whether the camera answers a capture requested from the app's address.
 - Whether the echo and reply behaviour on the real WiFi board matches the
   simulator.
 - Whether SkyPortal and our client can be connected at the same time, and
