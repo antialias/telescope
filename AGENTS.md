@@ -48,4 +48,11 @@ processing and documentation.
   and sends nothing, and `--capture [--exposure N]` has the camera take an
   exposure and prints its star list. It moves nothing and works on ours over
   WiFi (2026-11-22; `--exposure 100` suited a daylit room).
+- Plate solving (`solver.py`, `docs/plate-solving.md`) needs the `solve`
+  extra, which the dev group includes, and a database built once with
+  `uv run python -m celestron_aux --build-database` into `control/data/`
+  (not in git; 80 s here). Without it the solving tests skip.
+  `--capture --save FILE --solve` and `--solve-file FILE` solve; `--mirrored`
+  flips x. A solve is one attempt: never add a retry with the other parity,
+  another database or a looser gate.
 - A motion command to the real mount is sent on the owner's word.

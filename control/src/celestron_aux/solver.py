@@ -10,7 +10,7 @@ I/239). Neither file is in git. From `control/`:
     uv run python -m celestron_aux --build-database
 
 fetches the catalogue into `control/data/`, checks its sha256 and builds the
-database next to it (about nine minutes on a recent Mac).
+database next to it (80 s on one Mac in Nov 2026).
 
 A solve is one attempt with one database and one parity. When it fails, or
 an answer fails a gate, `NoSolution` says which. Nothing here retries with the
@@ -241,10 +241,10 @@ class _Library:
             star_catalog=catalogue,
             epoch_proper_motion=PROPER_MOTION_EPOCH,
         )
-        return int(tetra.num_patterns)
+        return int(tetra.database_properties["num_patterns"])  # its num_patterns stays None until a load
 
     def pattern_count(self) -> int:
-        return int(self._tetra.num_patterns)
+        return int(self._tetra.database_properties["num_patterns"])
 
     def solve(
         self, centroids: list[list[float]], size: tuple[int, int], *, fov_estimate: float | None, timeout: float

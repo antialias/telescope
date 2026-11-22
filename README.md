@@ -2,7 +2,8 @@
 
 Software for a Celestron NexStar Evolution 8 HD with StarSense AutoAlign. So
 far: a small Python client for the mount's AUX bus over its WiFi, which can
-also take exposures with the StarSense camera and read back its star lists.
+also take exposures with the StarSense camera, read back its star lists and
+plate solve them.
 
 This is not Celestron's software and has nothing to do with Celestron. What it
 knows about the protocol comes from the open-source projects listed under
@@ -19,8 +20,11 @@ WiFi, joined to a home network. Another mount may answer differently.
   status, stored centre, exposures, and star lists. About one list in six
   arrived a byte short over WiFi; the same list can be fetched again, and the
   client does that.
+- 2026-11-22: plate solving a star list with cedar-solve. One recorded list,
+  from someone else's camera, solved to a place the catalogue confirms
+  ([`docs/plate-solving.md`](docs/plate-solving.md)).
 
-Not done yet: turning a star list into a sky position, alignment, tracking.
+Not done yet: solving a list from our camera, alignment, tracking.
 
 ## Try it
 
@@ -30,11 +34,15 @@ Needs [uv](https://docs.astral.sh/uv/). From `control/`:
     uv run python -m celestron_aux <mount address> --camera     # reads only: the StarSense camera
     uv run python -m celestron_aux <mount address> --listen 60  # sends nothing: prints the bus
     uv run python -m celestron_aux <mount address> --capture --exposure 100   # one exposure and its star list
+    uv run python -m celestron_aux --build-database                # once: fetch the star catalogue, build the solver's database
+    uv run python -m celestron_aux <mount address> --capture --save list.json --solve   # one exposure, kept and solved
+    uv run python -m celestron_aux --solve-file list.json          # solve a saved list; no connection
     uv run pytest && uv run pyright
 
 Without an address it tries `1.2.3.4`, the mount's address on its own
 hotspot. The tests run against an emulator and a stand-in for the camera;
-they need no hardware and prove nothing about a real mount.
+they need no hardware and prove nothing about a real mount. The solving tests
+need the database and skip without it.
 
 ## Notes
 
@@ -50,7 +58,13 @@ mount and camera, and what is still unknown.
   tests run against.
 - [celestron-aux](https://github.com/platini2/celestron-aux): a
   reverse-engineered catalogue of AUX devices and commands. Everything here
-  about the StarSense camera started from its notes and recordings.
+  about the StarSense camera started from its notes and recordings. The star
+  list the solver tests use is from its tests (GPL-3.0).
+- [cedar-solve](https://github.com/smroid/cedar-solve): the plate solver, a
+  fork of ESA's [tetra3](https://github.com/esa/tetra3). Apache-2.0.
+- [Hipparcos main catalogue](https://cdsarc.cds.unistra.fr/viz-bin/cat/I/239)
+  (CDS I/239): the stars the solver's database is built from, fetched from
+  VizieR's Harvard mirror.
 
 ## Licence
 
