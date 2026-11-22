@@ -24,7 +24,8 @@ SENSOR_PIXELS = (1280, 960)  # celestron-aux starsense.py, SENSOR_RESOLUTION
 # exposure in milliseconds, which is our guess and not the toolkit's claim.
 RESET_DATA = bytes.fromhex("03e800")
 START_DATA = b"\x00"
-STATUS_NAMES = {1: "error", 3: "ready", 9: "finished"}  # celestron-aux decoding.py; a real idle camera answered 1
+# celestron-aux decoding.py. Our own camera answers 1 when idle after power-on, so 1 is not a fault.
+STATUS_NAMES = {1: "error", 3: "ready", 9: "finished"}
 
 
 @dataclass(frozen=True)

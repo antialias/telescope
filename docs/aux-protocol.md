@@ -161,8 +161,8 @@ These decide the shape of our software.
 
 From the `celestron-aux` toolkit (GPL-3), whose author says the names come
 from captures and reverse engineering. None of it is Celestron's. We have read
-the toolkit's source and its recordings of real hardware; we have not yet
-talked to our own camera (the mount was switched off when this was written).
+the toolkit's source and its recordings of real hardware. What our own camera
+has answered is under "Seen on our mount".
 
 - **Original camera (`0xB4`)**, the one we have (see `AGENTS.md`): it returns
   a list of star positions in pixels, not a sky position, so the solving
@@ -265,6 +265,27 @@ probe. The StarSense hand control and camera were plugged in.
   returned to its starting reading within 0.001 degree. Altitude did not
   change. Positive azimuth turned the tube to the right as seen from behind
   it, which is clockwise seen from above (the owner watched).
+
+### The camera over WiFi (2026-11-22)
+
+Indoors in daylight, over the house WiFi, from our address `0x20`. Reads only.
+
+- With the camera and the StarSense hand control unplugged, `0xB4` and `0x0E`
+  did not reply (two tries each, 3 s wait).
+- With both plugged in, both replied: camera `0xB4` version 1.02.13343 (the
+  same as the camera in the toolkit's recording), StarSense hand control
+  `0x0E` version 1.22.22187. So the Evolution's built-in WiFi board passes
+  our requests to the camera and its replies back.
+- Camera status (`0x91`): `01 00`. The toolkit's decoder calls status 1
+  "Error", but this is an idle camera just switched on, and the idle camera in
+  the toolkit's recording answered the same. Read it as "nothing captured",
+  not as a fault, until a capture shows otherwise.
+- Stored centre (`0x3F`): x 640, y 480, the exact middle of 1280 by 960. That
+  fits a camera whose Calibrate Center has never been completed; the camera
+  in the toolkit's recording answered zeros instead.
+- Nothing answers at `0xBD`, so there is no V2 camera, as expected.
+- Listening for 8 s without sending, with the hand control idle after
+  power-on: no frames. An idle hand control does not chatter.
 
 ## Not yet known
 

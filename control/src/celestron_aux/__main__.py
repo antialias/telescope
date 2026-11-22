@@ -75,7 +75,7 @@ def _bus(mount: AuxClient) -> None:
 def _camera(mount: AuxClient) -> None:
     print(f"camera version {mount.version(Device.STARSENSE_CAMERA)}")
     status = starsense.status(mount)
-    print(f"status {status.name}, {status.stars} stars")
+    print(f"status {status.code} (the toolkit's name for it: {status.name}), {status.stars} stars")
     x, y = starsense.align_center(mount)
     print(f"stored centre x {x}, y {y} (sensor is {starsense.SENSOR_PIXELS[0]} by {starsense.SENSOR_PIXELS[1]})")
 
