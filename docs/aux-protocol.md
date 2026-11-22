@@ -323,7 +323,8 @@ Indoors in daylight, over the house WiFi, from our address `0x20`. Reads only.
     nothing found. The reset was answered after 2.8 s, 1.9 s and 1.2 s for
     1000, 500 and 100, so the number acts as an exposure setting. Its unit is
     not established. Once the reset took 7.4 s to be answered.
-  - Of the first seven lists, two never completed. In the one recorded byte
+  - Of the first seven lists, two never completed (two of twelve by the end
+    of that session). In the one recorded byte
     for byte, 653 of 654 bytes arrived: one byte was missing about 135 bytes
     into the frame, at a 0.1 s pause in the stream that the intact lists show
     too. The loss is somewhere between the camera and our socket; a wired

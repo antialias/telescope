@@ -3,6 +3,7 @@ name = "telescope-control"
 version = "0.1.0"
 description = "Control of the Celestron NexStar Evolution mount over its AUX protocol"
 requires-python = ">=3.12"
+license = "GPL-3.0-only"
 dependencies = []
 
 [dependency-groups]

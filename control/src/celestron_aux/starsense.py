@@ -4,7 +4,7 @@ The command ids, the capture sequence and the meaning of the replies come from
 the celestron-aux toolkit (github.com/platini2/celestron-aux: catalog.py,
 decoding.py, starsense.py), which names community reverse engineering as its
 source. Run against our camera over the mount's WiFi on 2026-11-22: exposures
-were taken and star lists read, and about one list in four arrived a byte
+were taken and star lists read, and two of the first twelve lists arrived
 short, which is why `capture` asks again.
 
 Nothing here writes the camera's stored centre calibration (command 0x3E), and
