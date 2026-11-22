@@ -24,6 +24,14 @@ processing and documentation.
 - Never point the telescope or the StarSense camera at the Sun without a
   proper full-aperture solar filter (the manuals' solar warning).
 
+## This repository is public
+- It is published at github.com/antialias/telescope under GPL-3.0 (owner's
+  decision, 2026-11-22). Keep the owner's address, location, network
+  addresses and anything else personal out of files and commit messages, and
+  ask before adding a photo of the house.
+- Commits use the GitHub no-reply address set in this repository's git
+  config. Pushing is on the owner's word.
+
 ## Layout
 - `docs/`: documentation. `docs/manuals` holds Celestron's PDFs, which stay
   out of git; its README lists where each came from.
