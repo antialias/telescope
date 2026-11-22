@@ -19,6 +19,25 @@ Checked means one of:
   from the addressed device (source: the simulator's `handle_cmd`; simulator).
 - A device that is not on the bus sends nothing. A client learns that only by
   timing out (simulator).
+- Other traffic on the bus reaches the client too, such as a plugged-in hand
+  control talking to the motors. A client keeps only packets addressed to
+  `0x20` (source: indi-celestronaux `processResponse`).
+- **Finding the mount on a home network**: the WiFi board broadcasts a UDP
+  datagram to port 55555 every few seconds, and apps take the sender's
+  address. The payload differs by board generation: 110 bytes of binary on the
+  older WiFly board, the text `{"AMW007"}` on the newer one. Source for the
+  older board: the WiFly vendor manual and jochym's `nexstar-evo` client; for
+  the newer one only reverse-engineered emulators. Our `discover()` uses the
+  sender's address and ignores the payload.
+- **One client at a time.** Celestron's own WiFi tips warn that two devices
+  contending for one telescope cause connection problems. How many TCP
+  clients the board accepts is not documented anywhere we found.
+- **Idle connections may be dropped.** The `celestron-aux` toolkit sends a
+  version request after 10 seconds of silence to keep the link up. Our client
+  does not do this yet; a long-running service will need it.
+- **The hand control's ASCII protocol is not on WiFi.** Celestron's "NexStar
+  Communication Protocol" document says those commands go to the port on the
+  base of the hand control. Over WiFi there is only the AUX bus.
 
 ## Packet
 
@@ -131,7 +150,12 @@ it has been tried by us.
   positions at power-on.
 - Whether the echo and reply behaviour on the real WiFi board matches the
   simulator.
-- Whether SkyPortal and our client can be connected at the same time.
+- Whether SkyPortal and our client can be connected at the same time, and
+  what happens to SkyPortal's alignment if our client moves the mount.
+- Which WiFi board our 2025 mount has, what it broadcasts, and how long it
+  keeps an idle connection.
+- Whether macOS lets a terminal program receive the discovery broadcast
+  without a Local Network permission prompt.
 
 ## Sources
 
@@ -144,3 +168,10 @@ it has been tried by us.
 - [celestron-aux](https://github.com/platini2/celestron-aux): a
   reverse-engineered catalogue of AUX devices and commands, including
   StarSense.
+- [nexstar-evo](https://github.com/jochym/nexstar-evo/blob/master/nsevo/nexstarevo.py):
+  an earlier Python client by the driver's author; shows discovery on UDP
+  55555.
+- [NexStar Communication Protocol](https://s3.amazonaws.com/celestron-site-support-files/support_files/1154108406_nexstarcommprot.pdf):
+  Celestron's document for the hand control's ASCII protocol.
+- [WiFi tips for NexStar Evolution](https://www.celestron.com/blogs/knowledgebase/wifi-tips-for-nexstar-evolution):
+  Celestron's knowledge base.

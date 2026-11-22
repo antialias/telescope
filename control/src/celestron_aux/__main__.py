@@ -1,13 +1,17 @@
 """Read-only probe: list what answers on the mount's AUX bus. Moves nothing.
 
     python -m celestron_aux [host] [--port 2000]
+    python -m celestron_aux --discover
+
+Without a host it tries the mount's address on its own hotspot. `--discover`
+waits for a mount on this network to announce itself.
 """
 
 from __future__ import annotations
 
 import argparse
 
-from .client import DEFAULT_PORT, DIRECT_CONNECT_HOST, AuxClient, AuxTimeout
+from .client import DEFAULT_PORT, DIRECT_CONNECT_HOST, AuxClient, AuxTimeout, discover
 from .packet import Device
 
 MODELS = {0x1687: "NexStar Evolution"}  # indi-celestronaux celestronaux.h, MountVersion
@@ -17,9 +21,15 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("host", nargs="?", default=DIRECT_CONNECT_HOST)
     parser.add_argument("--port", type=int, default=DEFAULT_PORT)
+    parser.add_argument("--discover", action="store_true", help="find the mount on this network first")
     args = parser.parse_args()
 
-    with AuxClient(args.host, args.port) as mount:
+    host = args.host
+    if args.discover:
+        host = discover()
+        print(f"a mount announced itself at {host}")
+
+    with AuxClient(host, args.port) as mount:
         for device in Device:
             if device is Device.APP:
                 continue

@@ -16,6 +16,7 @@ from typing import Self
 from .packet import Command, Device, Packet, Parser
 
 DEFAULT_PORT = 2000
+DISCOVERY_PORT = 55555
 DIRECT_CONNECT_HOST = "1.2.3.4"  # the mount's address on its own hotspot
 STEPS_PER_REVOLUTION = 1 << 24
 MAX_MOVE_RATE = 9
@@ -37,6 +38,24 @@ class Battery:
     state: str
     level: str
     volts: float
+
+
+def discover(timeout: float = 15.0, port: int = DISCOVERY_PORT) -> str:
+    """Wait for a mount's WiFi board to announce itself, and return its address.
+
+    The board broadcasts a UDP datagram to this port every few seconds. The
+    payload differs between generations of the board, so only the sender's
+    address is used; anything else that broadcasts here would be returned too.
+    """
+    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as listener:
+        listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        listener.bind(("", port))
+        listener.settimeout(timeout)
+        try:
+            _, (host, _) = listener.recvfrom(1024)
+        except TimeoutError:
+            raise AuxTimeout(f"nothing announced itself on UDP port {port} within {timeout:g} s") from None
+        return host
 
 
 class AuxClient:
