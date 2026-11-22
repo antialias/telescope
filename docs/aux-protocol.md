@@ -186,6 +186,12 @@ probe. The StarSense hand control and camera were plugged in.
   one timed out, two connected and one was refused. The SkyPortal app was
   open on a phone at the time. Not yet explained; a client must expect it.
 
+- **First motion**, with the owner at the telescope: a slow goto
+  (`MC_GOTO_SLOW`) of azimuth by +5 degrees and back. It ran at about
+  0.5 degrees a second, `MC_SLEW_DONE` turned true on arrival, and the axis
+  returned to its starting reading within 0.001 degree. Altitude did not
+  change. Which way positive azimuth turns is still to be noted.
+
 ## Not yet known
 
 - What our own mount answers: which devices are present, firmware versions,
